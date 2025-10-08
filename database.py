@@ -77,7 +77,7 @@ class LocalList():
     # Before you use this method to do anything, please make sure the main list has been added into the database.
     @staticmethod
     def update_the_mainlist() -> bool:
-        connection = get_toolsdb_connection(env['EVB_DB_Name'])
+        connection = get_toolsdb_connection(env['EVB_DB_NAME'])
         timestamp = datetime.datetime.now(datetime.timezone.utc)
         voter_list: str = json.dumps(get_qualified_voter_list(timestamp))
         sql: str = '''
@@ -98,7 +98,7 @@ class LocalList():
             return False
 
     def update_the_sublist(self, new_sublist: list) -> bool:
-        connection = get_toolsdb_connection(env['EVB_DB_Name'])
+        connection = get_toolsdb_connection(env['EVB_DB_NAME'])
         if new_sublist == None:
             return False
         else:
@@ -134,7 +134,7 @@ class LocalList():
         FROM election_list
         WHERE election_id = 0;
         '''
-        connection = get_toolsdb_connection(env['EVB_DB_Name'])
+        connection = get_toolsdb_connection(env['EVB_DB_NAME'])
         with connection.cursor() as cursor:
             cursor.execute(sql,(username, times, election_type, json.dumps(sublist)))
             connection.commit()
@@ -152,7 +152,7 @@ class LocalList():
     def get_elections_index() -> list:
         sql = '''SELECT election_id, username, times, election_type FROM election_list WHERE election_id > 0;'''
         elections = []
-        with get_toolsdb_connection(env['EVB_DB_Name']).cursor() as cursor:
+        with get_toolsdb_connection(env['EVB_DB_NAME']).cursor() as cursor:
             cursor.execute(sql)
             result = cursor.fetchall()
             for s in result:
@@ -162,14 +162,14 @@ class LocalList():
     @property
     def voter_list(self) -> list:
         sql = 'SELECT voter_list FROM election_list WHERE election_id =%s;'
-        with get_toolsdb_connection(env['EVB_DB_Name']).cursor() as cursor:
+        with get_toolsdb_connection(env['EVB_DB_NAME']).cursor() as cursor:
             cursor.execute(sql, (self.election_id,))
             result = cursor.fetchone()
             return json.loads(result[0].decode('utf-8'))
         
     @property
     def subpage_title(self) -> str:
-        connection = get_toolsdb_connection(env['EVB_DB_Name'])
+        connection = get_toolsdb_connection(env['EVB_DB_NAME'])
         sql = 'SELECT username, times, election_type FROM election_list WHERE election_id = %s'
         with connection.cursor() as cursor:
             cursor.execute(sql,(self.election_id,))
@@ -180,7 +180,7 @@ class LocalList():
         
     @property
     def is_securePoll(self) -> bool:
-        connection = get_toolsdb_connection(env["EVB_DB_Name"])
+        connection = get_toolsdb_connection(env["EVB_DB_NAME"])
         sql = 'SELECT election_id FROM SecurePoll WHERE election_id = %s'
         with connection.cursor() as cursor:
             cursor.execute(sql, (self.election_id,))

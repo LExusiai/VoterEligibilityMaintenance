@@ -6,5 +6,5 @@ env = os.environ
 
 family = 'wikipedia'
 mylang = 'zh'
-usernames['wikipedia']['zh'] = env['botusername']
-authenticate['zh.wikipedia.org'] = (env['PWB_consumer_token'], env['PWB_consumer_secret'], env['PWB_access_token'],env['PWB_access_secret'])
+usernames['wikipedia']['zh'] = env['WPB_BOTUSERNAME']
+authenticate['zh.wikipedia.org'] = (env['PWB_CONSUMER_TOKEN'], env['PWB_CONSUMER_SECRET'], env['PWB_ACCESS_TOKEN'],env['PWB_ACCESS_SECRET'])
