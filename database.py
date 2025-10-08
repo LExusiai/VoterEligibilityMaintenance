@@ -121,37 +121,32 @@ class LocalList():
                     return False
     
     @staticmethod
-    def create_a_sublist(username: str, times: int, election_type: str, page_created_time: int, page_created_user: str) -> list:
-        update_status: bool = LocalList.update_the_mainlist()
-        if update_status == True:
-            sql = '''
-            INSERT INTO election_list ( 
-            username, 
-            times,
-            election_type,
-            voter_list,
-            created_time,
-            page_created_user
-            )
-            SELECT %s AS username, %s AS times, %s AS election_type, voter_list, %s AS created_time, %s AS page_created_user
-            FROM election_list
-            WHERE election_id = 0;
-            '''
-            connection = get_toolsdb_connection(env['EVB_DB_Name'])
-            with connection.cursor() as cursor:
-                cursor.execute(sql, (username, times, election_type, page_created_time, page_created_user,))
-                connection.commit()
-                sql = 'SELECT election_id, username, times, voter_list FROM election_list WHERE username = %s AND times = %s AND election_type = %s;'
-                cursor.execute(sql, (username, times, election_type,))
-                result = cursor.fetchone()
-                result = (result[0], result[1].decode('utf-8'), result[2].decode('utf-8'), result[3].decode('utf-8'),)
-                if result[1] == username and result[2] == str(times):
-                    datas = [result[0], json.loads(result[3])]
-                    return datas
-                else:
-                    return [-1]
-        else:
-            return [-2]
+    def create_a_sublist(username: str, times: int, election_type:str, eligibility_deadline: datetime.datetime) -> int:
+        sublist: list = get_qualified_voter_list(eligibility_deadline)
+        sql = '''
+        INSERT INTO election_list ( 
+        username, 
+        times,
+        election_type,
+        voter_list
+        )
+        SELECT %s AS username, %s AS times, %s AS election_type, %s AS voter_list
+        FROM election_list
+        WHERE election_id = 0;
+        '''
+        connection = get_toolsdb_connection(env['EVB_DB_Name'])
+        with connection.cursor() as cursor:
+            cursor.execute(sql,(username, times, election_type, json.dumps(sublist)))
+            connection.commit()
+            sql = 'SELECT election_id, username, times, voter_list FROM election_list WHERE username = %s AND times = %s AND election_types = %s;'
+            cursor.execute(sql, (username, times, election_type,))
+            result = cursor.fetchone()
+            result = (result[0], result[1].decode('utf-8'), result[2].decode('utf-8'),)
+            if result[1] == username and result[2] == str(times):
+                return result[0]
+            else:
+                return [-1]
+            
 
     @staticmethod
     def get_elections_index() -> list:
@@ -171,15 +166,6 @@ class LocalList():
             cursor.execute(sql, (self.election_id,))
             result = cursor.fetchone()
             return json.loads(result[0].decode('utf-8'))
-    
-    @property
-    def nomination_page_created_time(self) -> str:
-        sql = 'SELECT created_time FROM election_list WHERE election_id =%s;'
-        with get_toolsdb_connection(env['EVB_DB_Name']).cursor() as cursor:
-            cursor.execute(sql, (self.election_id,))
-            result = cursor.fetchone()
-            page_created_time = json.loads(result[0])
-            return page_created_time
         
     @property
     def subpage_title(self) -> str:
@@ -206,4 +192,3 @@ class LocalList():
                     return True
                 else:
                     return False
-            
