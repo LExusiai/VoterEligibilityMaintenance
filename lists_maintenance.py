@@ -84,7 +84,7 @@ def maintenance_sublists() -> None:
         sub_list_page = pywikibot.Page(site, local_election.subpage_title)
         new_sub_list: list = local_election.voter_list
         wikitext_list = "\n".join(new_sub_list[0])
-        wikitext_list = "{{[Wikipedia:人事任免投票资格/名单/header}}" + "\n" \
+        wikitext_list = "{{Wikipedia:人事任免投票资格/名单/header}}" + "\n" \
              + "本页面为机器人依[[Wikipedia:人事任免投票资格]]自动生成的合资格选民名单，全名单合计{person}人。".format(person=len(local_election.voter_list[0]))\
              + "\n" + "名单最后更新基准时间：{time}".format(time=datetime.datetime.now(datetime.timezone.utc).strftime("%Y年%m月%d日%H时%M分%S秒（协调世界时）")) \
              + "\n" + "<pre>" + "\n" + wikitext_list + "\n" + "</pre>"
