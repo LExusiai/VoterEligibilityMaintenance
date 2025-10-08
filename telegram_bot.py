@@ -6,7 +6,7 @@ import json
 import datetime
 
 env = os.environ
-admin_list: list = json.loads(env["ADMINIDLIST"]) # [[id, username],......]
+admin_list: list = json.loads(env["TGB_ADMINIDLIST"]) # [[id, username],......]
 
 async def create_sublist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_sender.id in [telegram_information[0] for telegram_information in admin_list]:
