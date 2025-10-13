@@ -45,7 +45,7 @@ def get_qualified_voter_list(timestamp: datetime.datetime) -> list:
             '''
             time_delta = datetime.timedelta(days=180)
             latest_time = timestamp - time_delta
-            timestamp = str(timestamp.strftime("%Y%m%d%H%M%S"))
+            timestamp = timestamp.strftime("%Y%m%d%H%M%S")
             latest_time = str(latest_time.strftime("%Y%m%d%H%M%S"))
             cursor.execute(sql, (latest_time,timestamp,latest_time,))
             result = cursor.fetchall()
@@ -65,9 +65,6 @@ def get_toolsdb_connection(database_name: str) -> pymysql.connections.Connection
         password=config.get("client", "password")
     )
     return connection
-
-def is_admin(userid: int) -> bool:
-    pass
 
 # Voter datas stored in the ToolsDB        
 class LocalList():
@@ -91,7 +88,7 @@ class LocalList():
             sql = ''' SELECT voter_list FROM election_list WHERE election_id = 0;'''
             cursor.execute(sql)
             result = cursor.fetchone()
-            local_voter_list: list = json.loads(result[0].decode('utf-8'))
+            local_voter_list: list = json.loads(result[0])
         if local_voter_list == json.loads(voter_list):
             return True
         else:
@@ -114,7 +111,7 @@ class LocalList():
                 sql = '''SELECT voter_list FROM election_list WHERE election_id = %s'''
                 cursor.execute(sql,(self.election_id,))
                 result = cursor.fetchone()
-                updated_list: list = json.loads(result[0].decode('utf-8'))
+                updated_list: list = json.loads(result[0])
                 if updated_list == new_sublist:
                     return True
                 else:
@@ -145,7 +142,7 @@ class LocalList():
             if result[1] == username and result[2] == str(times):
                 return result[0]
             else:
-                return [-1]
+                return -1
             
 
     @staticmethod
@@ -165,7 +162,7 @@ class LocalList():
         with get_toolsdb_connection(env['EVB_DB_NAME']).cursor() as cursor:
             cursor.execute(sql, (self.election_id,))
             result = cursor.fetchone()
-            return json.loads(result[0].decode('utf-8'))
+            return json.loads(result[0])
         
     @property
     def subpage_title(self) -> str:

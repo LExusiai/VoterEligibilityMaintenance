@@ -15,7 +15,7 @@ def maintenance_mainlist() -> None:
     update_time = datetime.datetime.now(datetime.timezone.utc).strftime("%Y年%m月%d日%H时%M分%S秒（协调世界时）")
     database.LocalList.update_the_mainlist()
     updated_list: list = database.LocalList(0).voter_list
-    if set(list_before_update) == set(updated_list):
+    if sorted(list_before_update) == sorted(updated_list):
         return None
     else:
         removed_voter: set = set(list_before_update[1]) - set(updated_list[1])
