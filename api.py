@@ -1,65 +1,76 @@
 from typing import Union
 from fastapi import FastAPI
+from enum import Enum
 from . import database
+import pywikibot
 
 app = FastAPI()
+site = pywikibot.Site('zh', 'wikipedia')
 
-@app.get("/election/is_eligibility/{election_id}")
-def is_eligibility(election_id: int, username: str) -> dict:
-    election = database.LocalList(election_id=election_id)
-    voter_list: list = election.voter_list
-    if username == "":
-        response = {
-            "successful_flag": False
-        }
-        return response
-    else:
-        if "@zhwiki" in username:
-            if username in voter_list[0]:
-                response = {
-                    "successful_flag": True,
-                    "election_id": election,
-                    "eligibility": True
-                }
-                return response
-            else:
-                response = {
-                    "successful_flag": True,
-                    "election_id": election,
-                    "eligibility": False
-                }
-                return response
-        else:
-            if username in voter_list[1]:
-                response = {
-                    "successful_flag": True,
-                    "election_id": election,
-                    "eligibility": True
-                }
-                return response
-            else:
-                response = {
-                    "successful_flag": True,
-                    "election_id": election,
-                    "eligibility": False
-                }
-                return response
-            
-@app.get("/election/index_query")
-def index_query(username: str, times: str, election_type: str):
-    election_index = database.LocalList.get_elections_index()
-    for election in election_index:
-        if election[1] == username and election[2] == times and election[3] ==election_type:
+class ElectionTypes(str, Enum):
+    sysop = "sysop"
+    bureaucrat = "bureaucrat"
+    checkuser = "checkuser"
+    oser = "oser"
+    arbcom = "arbcom"
+
+@app.get("/election/getid")
+def get_election_id(election_type: ElectionTypes, username: str, times: int):
+    user = pywikibot.User(site, username)
+    registered_flag: bool = user.isRegistered()
+    if registered_flag:
+        elecion_informations: dict = database.LocalList.get_election_id(election_type, username, times)
+        if elecion_informations["flag"]:
             response = {
-                "successful_flag": True,
-                "election_id": election[0]
+                "flag": True,
+                "election_type": election_type,
+                "username": username,
+                "times": times,
+                "election_id": elecion_informations["election_id"]
             }
             return response
         else:
-            continue
-        
-    response = {
-        "successful_flag": False
-    }
-    return response
-        
+            response = {
+                "flag": False,
+                "tip": "No informations."
+            }
+            return response
+    else:
+        response = {
+            "flag": False,
+            "tip": "{username} is not registered.".format(username=username)
+        }
+        return response
+    
+@app.get("/election/eligibility")
+def get_voter_eligibility(election_id: int, username: str):
+    user = pywikibot.User(site, username)
+    election_id_list: list = database.LocalList.get_elections_id_list()
+    if election_id in election_id_list:
+        if user.isRegistered():
+            election = database.LocalList(election_id)
+            voter_list: list = election.voter_list
+            if username + "@zhwiki" in voter_list:
+                response = {
+                    "flag": True,
+                    "voter_eligibility": True
+                }
+                return response
+            else:
+                response = {
+                    "flag": True,
+                    "voter_eligibility": False
+                }
+                return response
+        else:
+            response = {
+                "flag": False,
+                "tip": "username is not registered on zhwiki."
+            }
+            return response
+    else:
+        response = {
+            "flag": False,
+            "tip": "election id is not vaild."
+        }
+        return response

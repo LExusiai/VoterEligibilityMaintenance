@@ -11,7 +11,7 @@ import configparser
 env = os.environ
 # The function will return a list including two lists: fmt_voter_list and voter_list.
 # The usernames in fmt_voter_list have a suffix "@zhwiki", and the usernames in voter_list are not.
-def get_qualified_voter_list(timestamp: datetime.datetime) -> list:
+def get_qualified_voter_list(timestamp: datetime.datetime) -> list[list]:
     connection: pymysql.Connection = toolforge.connect('zhwiki')
     with connection:
         with connection.cursor() as cursor:
@@ -45,7 +45,7 @@ def get_qualified_voter_list(timestamp: datetime.datetime) -> list:
             '''
             time_delta = datetime.timedelta(days=180)
             latest_time = timestamp - time_delta
-            timestamp = timestamp.strftime("%Y%m%d%H%M%S")
+            timestamp = timestamp.strftime("%Y%m%d%H%M%S") # type: ignore # waht? why?
             latest_time = str(latest_time.strftime("%Y%m%d%H%M%S"))
             cursor.execute(sql, (latest_time,timestamp,latest_time,))
             result = cursor.fetchall()
@@ -155,6 +155,37 @@ class LocalList():
             for s in result:
                 elections.append([s[0], s[1].decode('utf-8'), s[2].decode('utf-8'), s[3].decode('utf-8')])
         return elections
+    
+    @staticmethod
+    def get_elections_id_list() -> list:
+        sql = '''SELECT election_id FROM election_list;'''
+        elections = []
+        with get_toolsdb_connection(env['EVB_DB_NAME']).cursor() as cursor:
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            for s in result:
+                elections.append(s)
+        return elections
+    
+    @staticmethod
+    def get_election_id(election_type: str, username: str, times: int) -> dict:
+        sql = '''SELECT election_id FROM election_list WHERE election_type = %s AND username = %s AND times = %s;'''
+        connection: pymysql.Connection = get_toolsdb_connection(env['EVB_DB_NAME'])
+        with connection.cursor() as cursor:
+            cursor.execute(sql, (election_type, username, times,))
+            result = cursor.fetchone()
+            if len(result) == 0:
+                response = {
+                    "flag": False
+                }
+                return response
+            else:
+                election_id: int = result[0]
+                response = {
+                    "flag": True,
+                    "election_id": election_id
+                }
+                return response
 
     @property
     def voter_list(self) -> list:
