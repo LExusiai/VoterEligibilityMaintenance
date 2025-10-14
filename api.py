@@ -9,6 +9,7 @@ site = pywikibot.Site('zh', 'wikipedia')
 
 class ElectionTypes(str, Enum):
     sysop = "sysop"
+    interface_admin = "interface_admin"
     bureaucrat = "bureaucrat"
     checkuser = "checkuser"
     oser = "oser"

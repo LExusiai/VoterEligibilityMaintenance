@@ -3,6 +3,8 @@
 import datetime
 import pywikibot
 import os
+import re
+from pywikibot import pagegenerators
 from . import database
 
 env = os.environ
@@ -32,6 +34,32 @@ def maintenance_mainlist() -> None:
         if removed_voter:
             summary: str = summary + "-" + "、".join(removed_voter)
         main_list_page.save(summary=summary)
+
+# -1 : sublist existed.
+# -2 : user is not registered.
+def create_a_sublist(username: str, times: int, election_type: str, timestamp: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)) -> int:
+    user = pywikibot.User(site, username)
+    if user.isRegistered():
+        election_check: dict = database.LocalList.get_election_id(election_type, username, times)
+        if election_check["flag"] == False:
+            election_id: int = database.LocalList.create_a_sublist(username, times, election_type, timestamp)
+            election = database.LocalList(election_id)
+            voter_list: list[list] = election.voter_list
+            wikitext_list = "\n".join(voter_list[0])
+            wikitext_list = "{{Wikipedia:人事任免投票资格/名单/header}}" + "\n\n" \
+                + "本页面为机器人依[[Wikipedia:人事任免投票资格]]为某场选举自动生成的合资格选民名单，全名单合计{person}人。".format(person=len(voter_list[0]))\
+                + "\n\n" + "名单最后更新基准时间：{time}".format(time=timestamp) \
+                + "\n\n" + "<pre>" + "\n" + wikitext_list + "\n" + "</pre>"
+            main_list_page.text = wikitext_list
+            summary = "新名单"
+            page = pywikibot.Page(site, env["EVB_LIST_PREFIX"] + str(election_id))
+            page.text = wikitext_list
+            page.save(summary=summary)
+            return election_id
+        else:
+            return -1
+    else:
+        return -2
 
 def get_latest_username(username: str) -> str:
     finding: bool = True
@@ -91,6 +119,135 @@ def maintenance_sublists() -> None:
         sub_list_page.text = wikitext_list
         summary = "机器人已自动更新重命名用户：" + "、".join([f"{a} -> {b}" for a,b in username_changes])
         sub_list_page.save(summary=summary)
+
+def new_nomination_detection() -> None:
+    year: int = datetime.datetime.now(datetime.timezone.utc).year
+    votes_in_zhwiki = pywikibot.Category(site, str(year) + "年維基百科投票")
+    admin_votes = pywikibot.Category(site, "管理员任免投票")
+    election_index_list: list = database.LocalList.get_elections_index()
+    election_type_list: list[str] = ["管理员", "界面管理员", "行政员", "用户查核员", "监督员"]
+    nominations = pagegenerators.CategoryFilterPageGenerator(pagegenerators.CategorizedPageGenerator(votes_in_zhwiki), [admin_votes])
+    nominations_list: list[pywikibot.Page] = list(nominations)
+    if len(nominations_list) == 0:
+        return None
+    else:
+        nominations_list: list[str] = [page.title() for page in nominations_list]
+        for page_title in nominations_list:
+            if page_title.startswith("申请成为"):
+                nomination_information: list[str] = page_title[4:].split('/')
+                page_created_time: datetime.datetime= pywikibot.Page(page_title).oldest_revision.timestamp
+                match nomination_information:
+                    case [election_type, username]:
+                        if election_type in election_type_list:
+                            match election_type:
+                                case "管理员":
+                                    election_id: int = create_a_sublist(username, 1, "sysop", page_created_time)
+                                    if election_id >= 0:
+                                        # todo: log
+                                        continue
+                                    else:
+                                        # todo: log
+                                        continue
+                                case "界面管理员":
+                                    election_id: int = create_a_sublist(username, 1, "interface_admin", page_created_time)
+                                    if election_id >= 0:
+                                        # todo: log
+                                        continue
+                                    else:
+                                        # todo: log
+                                        continue
+                                case "行政员":
+                                    election_id: int = create_a_sublist(username, 1, "bureaucrat", page_created_time)
+                                    if election_id >= 0:
+                                        # todo: log
+                                        continue
+                                    else:
+                                        # todo: log
+                                        continue
+                                case "用户查核员":
+                                    election_id: int = create_a_sublist(username, 1, "checkuser", page_created_time)
+                                    if election_id >= 0:
+                                        # todo: log
+                                        continue
+                                    else:
+                                        # todo: log
+                                        continue
+                                case "监督员":
+                                    election_id: int = create_a_sublist(username, 1, "oser", page_created_time)
+                                    if election_id >= 0:
+                                        # todo: log
+                                        continue
+                                    else:
+                                        # todo: log
+                                        continue
+                                case _:
+                                    # todo: log
+                                    continue
+                        else:
+                            # todo: type not vaild.
+                            continue
+                    case [election_type, username, times]:
+                        regex = re.search(r'第(.*?)次', times)
+                        if regex:
+                            times = int(regex.group(1))
+                        else:
+                            times = 1
+                            
+                        if election_type in election_type_list:
+                            match election_type:
+                                case "管理员":
+                                    election_id: int = create_a_sublist(username, times, "sysop", page_created_time)
+                                    if election_id >= 0:
+                                        # todo: log
+                                        continue
+                                    else:
+                                        # todo: log
+                                        continue
+                                case "界面管理员":
+                                    election_id: int = create_a_sublist(username, times, "interface_admin", page_created_time)
+                                    if election_id >= 0:
+                                        # todo: log
+                                        continue
+                                    else:
+                                        # todo: log
+                                        continue
+                                case "行政员":
+                                    election_id: int = create_a_sublist(username, times, "bureaucrat", page_created_time)
+                                    if election_id >= 0:
+                                        # todo: log
+                                        continue
+                                    else:
+                                        # todo: log
+                                        continue
+                                case "用户查核员":
+                                    election_id: int = create_a_sublist(username, times, "checkuser", page_created_time)
+                                    if election_id >= 0:
+                                        # todo: log
+                                        continue
+                                    else:
+                                        # todo: log
+                                        continue
+                                case "监督员":
+                                    election_id: int = create_a_sublist(username, times, "oser", page_created_time)
+                                    if election_id >= 0:
+                                        # todo: log
+                                        continue
+                                    else:
+                                        # todo: log
+                                        continue
+                                case _:
+                                    # todo: log
+                                    continue
+                        else:
+                            # todo: type not vaild.
+                            continue
+                    case _:
+                        # wokao
+                        continue
+            else:
+                # todo: title error
+                continue
+
 
 
 
